@@ -1,0 +1,194 @@
+# Garb & Glitz - Inventory Management Dashboard
+
+A modern, responsive inventory management dashboard built with React 18, Vite, Tailwind CSS, and React Router.
+
+## Features
+
+- 📊 **Dashboard** - Overview of key metrics and statistics
+- 📦 **Product Management** - Add, edit, and view product details
+- 💰 **Sales Tracking** - Record and monitor sales transactions
+- 📈 **Inventory Management** - Track stock levels and alerts
+- 🔮 **Demand Forecasting** - Predict future inventory needs
+- 📊 **Analytics & Reports** - Generate insights from your data
+
+## Tech Stack
+
+- **React 18** - Modern React with hooks
+- **Vite 5** - Lightning-fast build tool
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Router 6** - Client-side routing
+- **Axios** - HTTP client for API requests
+- **Recharts** - Data visualization library
+- **Lucide React** - Beautiful icon library
+- **Headless UI** - Unstyled, accessible UI components
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd inventory-dashboard
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment file:
+```bash
+cp .env.example .env
+```
+
+4. Update `.env` with your API URL:
+```
+VITE_API_URL=http://localhost:8000
+```
+
+### Development
+
+Start the development server:
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`
+
+### Build
+
+Create a production build:
+```bash
+npm run build
+```
+
+Preview the production build:
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+inventory-dashboard/
+├── public/
+├── src/
+│   ├── api/
+│   │   └── client.js          # Axios API client
+│   ├── components/
+│   │   ├── common/             # Reusable components
+│   │   │   ├── Button.jsx
+│   │   │   ├── Input.jsx
+│   │   │   ├── Card.jsx
+│   │   │   ├── Modal.jsx
+│   │   │   ├── Table.jsx
+│   │   │   └── LoadingSpinner.jsx
+│   │   └── layout/             # Layout components
+│   │       ├── Layout.jsx
+│   │       ├── Navbar.jsx
+│   │       └── Sidebar.jsx
+│   ├── pages/                  # Page components
+│   │   ├── Dashboard.jsx
+│   │   └── PlaceholderPages.jsx
+│   ├── App.jsx                 # Main app component
+│   ├── main.jsx               # Entry point
+│   └── index.css              # Global styles
+├── index.html
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
+└── postcss.config.js
+```
+
+## Component Usage
+
+### Button
+```jsx
+import Button from './components/common/Button';
+
+<Button variant="primary" size="md" onClick={handleClick}>
+  Click Me
+</Button>
+```
+
+### Input
+```jsx
+import Input from './components/common/Input';
+
+<Input
+  label="Product Name"
+  name="name"
+  value={value}
+  onChange={handleChange}
+  required
+/>
+```
+
+### Card
+```jsx
+import Card from './components/common/Card';
+
+<Card header="Title" footer={<Button>Action</Button>}>
+  Content goes here
+</Card>
+```
+
+### Table
+```jsx
+import Table from './components/common/Table';
+
+const columns = [
+  { key: 'name', label: 'Name' },
+  { key: 'price', label: 'Price' },
+];
+
+<Table columns={columns} data={data} onRowClick={handleRowClick} />
+```
+
+## Dark Mode
+
+The app supports dark mode out of the box. Toggle dark mode by adding the `dark` class to the `<html>` element:
+
+```javascript
+document.documentElement.classList.toggle('dark');
+```
+
+## API Integration
+
+The app uses Axios for API requests. Configure the base URL in `.env`:
+
+```javascript
+import api from './api/client';
+
+// GET request
+const response = await api.get('/products');
+
+// POST request
+const response = await api.post('/products', data);
+```
+
+## Authentication
+
+The API client automatically adds authentication tokens from localStorage:
+
+```javascript
+localStorage.setItem('token', 'your-auth-token');
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.

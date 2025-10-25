@@ -1,0 +1,317 @@
+import { useEffect, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+
+// Simple Card component
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-white rounded-lg shadow ${className}`}>
+    {children}
+  </div>
+);
+
+// Simple Button component
+const Button = ({ children, onClick, disabled, className = '' }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed ${className}`}
+  >
+    {children}
+  </button>
+);
+
+// Simple LoadingSpinner component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
+
+// RevenueChart component
+const RevenueChart = ({ data }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatRevenue = (value) => {
+    if (value >= 10000000) {
+      return `₹${(value / 10000000).toFixed(1)}Cr`;
+    } else if (value >= 100000) {
+      return `₹${(value / 100000).toFixed(1)}L`;
+    } else if (value >= 1000) {
+      return `₹${(value / 1000).toFixed(1)}K`;
+    }
+    return `₹${value}`;
+  };
+
+  const formatTooltipValue = (value) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    }).format(value);
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis 
+          dataKey="date" 
+          tickFormatter={formatDate}
+          stroke="#6b7280"
+          style={{ fontSize: '12px' }}
+        />
+        <YAxis 
+          tickFormatter={formatRevenue}
+          stroke="#6b7280"
+          style={{ fontSize: '12px' }}
+        />
+        <Tooltip 
+          labelFormatter={formatDate}
+          formatter={(value) => [formatTooltipValue(value), 'Revenue']}
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '8px 12px'
+          }}
+        />
+        <Area 
+          type="monotone" 
+          dataKey="revenue" 
+          stroke="#3b82f6" 
+          strokeWidth={2}
+          fill="url(#revenueGradient)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Mock API client - replace with your actual implementation
+const mockApiCall = async (endpoint) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Mock data based on endpoint
+  if (endpoint === '/api/v1/products') {
+    return { data: Array.from({ length: 45 }, (_, i) => ({ sku: `SAR${String(i + 1).padStart(3, '0')}` })) };
+  }
+  
+  if (endpoint.includes('/api/v1/analytics/top-products')) {
+    return {
+      data: [
+        { sku: 'SAR001', name: 'Red Silk Saree', qtySold: 45, revenue: 135000 },
+        { sku: 'SAR002', name: 'Blue Cotton Suit', qtySold: 38, revenue: 95000 },
+        { sku: 'SAR003', name: 'Green Georgette Saree', qtySold: 32, revenue: 80000 },
+        { sku: 'SAR004', name: 'Pink Lehenga Set', qtySold: 28, revenue: 168000 },
+        { sku: 'SAR005', name: 'Yellow Dupatta', qtySold: 25, revenue: 37500 }
+      ]
+    };
+  }
+  
+  if (endpoint.includes('/api/v1/analytics/revenue-trend')) {
+    const days = 90;
+    return {
+      data: Array.from({ length: days }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (days - i - 1));
+        return {
+          date: date.toISOString().split('T')[0],
+          revenue: 50000 + Math.random() * 50000
+        };
+      })
+    };
+  }
+  
+  if (endpoint.includes('/api/v1/inventory/low-stock')) {
+    return {
+      data: [
+        { sku: 'SAR010', name: 'Orange Banarasi Saree', currentStock: 3 },
+        { sku: 'SAR015', name: 'White Anarkali Suit', currentStock: 5 },
+        { sku: 'SAR022', name: 'Maroon Silk Dupatta', currentStock: 2 }
+      ]
+    };
+  }
+  
+  return { data: [] };
+};
+
+const axios = {
+  get: mockApiCall
+};
+
+export default function Dashboard() {
+  const [stats, setStats] = useState({
+    todayRevenue: 0,
+    totalSKUs: 0,
+    lowStockCount: 0,
+    pendingPOs: 0
+  });
+  const [revenueTrend, setRevenueTrend] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [lowStockAlerts, setLowStockAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [productsRes, topProductsRes, revenueRes, lowStockRes] = await Promise.all([
+        axios.get('/api/v1/products'),
+        axios.get('/api/v1/analytics/top-products?days=30'),
+        axios.get('/api/v1/analytics/revenue-trend?days=90'),
+        axios.get('/api/v1/inventory/low-stock')
+      ]);
+
+      const products = productsRes.data;
+      const todayRevenue = revenueRes.data[revenueRes.data.length - 1]?.revenue || 0;
+      
+      setStats({
+        todayRevenue,
+        totalSKUs: products.length,
+        lowStockCount: lowStockRes.data.length,
+        pendingPOs: 12
+      });
+
+      setRevenueTrend(revenueRes.data.slice(-30));
+      setTopProducts(topProductsRes.data.slice(0, 5));
+      setLowStockAlerts(lowStockRes.data);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch dashboard data');
+      console.error('Dashboard error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const handleReorder = (product) => {
+    alert(`Reorder initiated for ${product.name}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+          Error: {error}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6">
+          <div className="text-sm font-medium text-gray-600">Today's Revenue</div>
+          <div className="text-2xl font-bold text-gray-900 mt-2">
+            {formatCurrency(stats.todayRevenue)}
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="text-sm font-medium text-gray-600">Total SKUs</div>
+          <div className="text-2xl font-bold text-gray-900 mt-2">{stats.totalSKUs}</div>
+        </Card>
+        <Card className="p-6">
+          <div className="text-sm font-medium text-gray-600">Low Stock Alerts</div>
+          <div className="text-2xl font-bold text-red-600 mt-2">{stats.lowStockCount}</div>
+        </Card>
+        <Card className="p-6">
+          <div className="text-sm font-medium text-gray-600">Pending POs</div>
+          <div className="text-2xl font-bold text-gray-900 mt-2">{stats.pendingPOs}</div>
+        </Card>
+      </div>
+
+      {/* Revenue Trend Chart */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue Trend (Last 30 Days)</h2>
+        <RevenueChart data={revenueTrend} />
+      </Card>
+
+      {/* Top 5 Products */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Top 5 Products</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty Sold</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {topProducts.map((product) => (
+                <tr key={product.sku} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.sku}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{product.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{product.qtySold}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    {formatCurrency(product.revenue)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Low Stock Alerts */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Low Stock Alerts</h2>
+        <div className="space-y-3">
+          {lowStockAlerts.length === 0 ? (
+            <p className="text-gray-500">No low stock alerts</p>
+          ) : (
+            lowStockAlerts.map((product) => (
+              <div key={product.sku} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{product.name}</div>
+                  <div className="text-sm text-gray-600">
+                    Current Stock: <span className="font-semibold text-red-600">{product.currentStock}</span> units
+                  </div>
+                </div>
+                <Button onClick={() => handleReorder(product)} className="ml-4">
+                  Reorder
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}

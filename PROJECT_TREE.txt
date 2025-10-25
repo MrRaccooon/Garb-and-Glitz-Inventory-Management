@@ -1,0 +1,140 @@
+garb-and-glitz-inventory/
+├── backend
+│   ├── app
+│   │   ├── api
+│   │   │   ├── v1
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── analytics.py
+│   │   │   │   ├── forecasting.py
+│   │   │   │   ├── inventory.py
+│   │   │   │   ├── products.py
+│   │   │   │   └── sales.py
+│   │   │   └── __init__.py
+│   │   ├── ml
+│   │   │   ├── __init__.py
+│   │   │   ├── data_loader.py
+│   │   │   ├── features.py
+│   │   │   ├── inference_api.py
+│   │   │   ├── prophet_model.py
+│   │   │   └── training_script.py
+│   │   ├── models
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py
+│   │   │   ├── calendar_events.py
+│   │   │   ├── inventory_ledger.py
+│   │   │   ├── products.py
+│   │   │   ├── promotions.py
+│   │   │   ├── purchase_orders.py
+│   │   │   ├── returns.py
+│   │   │   ├── sales.py
+│   │   │   └── suppliers.py
+│   │   ├── schemas
+│   │   │   ├── __init__.py
+│   │   │   ├── analytics.py
+│   │   │   ├── forecasting.py
+│   │   │   ├── inventory.py
+│   │   │   ├── products.py
+│   │   │   └── sales.py
+│   │   ├── services
+│   │   │   ├── __init__.py
+│   │   │   ├── analytics_service.py
+│   │   │   ├── import_service.py
+│   │   │   ├── inventory_service.py
+│   │   │   └── reorder_service.py
+│   │   ├── utils
+│   │   │   └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   └── schemas.py
+│   ├── migrations
+│   │   └── versions
+│   ├── tests
+│   │   ├── test_api
+│   │   │   └── __init__.py
+│   │   ├── test_services
+│   │   │   └── __init__.py
+│   │   └── __init__.py
+│   ├── Dockerfile
+│   ├── main.py
+│   ├── package-lock.json
+│   └── requirements.txt
+├── data
+│   └── seed
+├── docs
+├── frontend
+│   ├── public
+│   ├── src
+│   │   ├── api
+│   │   │   └── client.js
+│   │   ├── components
+│   │   │   ├── charts
+│   │   │   │   └── RevenueChart.jsx
+│   │   │   ├── common
+│   │   │   │   ├── Alert.jsx
+│   │   │   │   ├── Badge.jsx
+│   │   │   │   ├── Button.jsx
+│   │   │   │   ├── Card.jsx
+│   │   │   │   ├── Dropdown.jsx
+│   │   │   │   ├── EmptyState.jsx
+│   │   │   │   ├── Input.jsx
+│   │   │   │   ├── LoadingSpinner.jsx
+│   │   │   │   ├── Modal.jsx
+│   │   │   │   ├── Pagination.jsx
+│   │   │   │   ├── SearchInput.jsx
+│   │   │   │   ├── Table.jsx
+│   │   │   │   └── Toast.jsx
+│   │   │   ├── layout
+│   │   │   │   ├── Layout.jsx
+│   │   │   │   ├── Navbar.jsx
+│   │   │   │   └── Sidebar.jsx
+│   │   │   └── InvoicePDF.jsx
+│   │   ├── hooks
+│   │   │   ├── useDashboardStats.js
+│   │   │   └── useProducts.js
+│   │   ├── pages
+│   │   │   ├── Analytics
+│   │   │   ├── Forecasting
+│   │   │   │   ├── ForecastChart.jsx
+│   │   │   │   └── ForecastDashboard.jsx
+│   │   │   ├── Inventory
+│   │   │   │   ├── LowStockAlert.jsx
+│   │   │   │   └── StockView.jsx
+│   │   │   ├── Products
+│   │   │   │   ├── ProductDetail.jsx
+│   │   │   │   ├── ProductForm.jsx
+│   │   │   │   └── ProductList.jsx
+│   │   │   ├── Sales
+│   │   │   │   ├── NewSale.jsx
+│   │   │   │   └── SalesHIstory.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   └── PlaceholderPages.jsx
+│   │   ├── utils
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── .env.example
+│   ├── .eslintrc.cjs
+│   ├── .gitignore
+│   ├── .prettierrc
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   └── vite.config.js
+├── nginx
+│   └── nginx.conf
+├── scripts
+│   ├── backup_db.sh
+│   ├── refresh_tree.py
+│   ├── seed_db.py
+│   └── seed_db.sh
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── README.md
+├── README2
+├── structure.txt
+└── test_db.py
