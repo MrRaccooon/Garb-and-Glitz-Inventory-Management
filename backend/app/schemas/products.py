@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-class ProductBase(BaseModel):
+class ProductBase(BaseModel):twnenteneszt
     name: str
     category: str
     subcategory: Optional[str]
@@ -32,3 +32,4 @@ class ProductResponse(ProductBase):
 
     class Config:
         orm_mode = True
+mvnhvhvmn
