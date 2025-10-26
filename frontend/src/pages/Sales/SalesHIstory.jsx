@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Modal } from '@/components/ui/modal';
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
 import api from '../../api/client';
 
 const SalesHistory = () => {
@@ -24,7 +24,7 @@ const SalesHistory = () => {
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
 
-      const response = await api.get('/api/v1/sales', { params });
+      const response = await api.get('/sales', { params });
       setSales(response.data);
     } catch (error) {
       alert('Failed to fetch sales: ' + (error.response?.data?.message || error.message));
@@ -55,10 +55,10 @@ const SalesHistory = () => {
     const headers = ['Invoice #', 'Date', 'Total', 'Payment Mode', 'Items Count'];
     const rows = sales.map(sale => [
       sale.invoice_number || sale.id,
-      new Date(sale.date).toLocaleDateString(),
+      new Date(sale.timestamp || sale.date).toLocaleDateString(),
       sale.total,
       sale.payment_mode,
-      sale.items?.length || 0
+      1
     ]);
 
     const csvContent = [
@@ -133,18 +133,18 @@ const SalesHistory = () => {
               <tbody>
                 {sales.map((sale) => (
                   <tr
-                    key={sale.id}
+                    key={sale.sale_id || sale.id}
                     className="border-b hover:bg-gray-50 cursor-pointer"
                     onClick={() => viewDetails(sale)}
                   >
                     <td className="py-3 px-4 font-medium">
-                      {sale.invoice_number || `INV-${sale.id}`}
+                      {sale.invoice_number || `INV-${sale.sale_id || sale.id}`}
                     </td>
                     <td className="py-3 px-4">
-                      {new Date(sale.date).toLocaleDateString()}
+                      {new Date(sale.timestamp || sale.date).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4 text-right font-medium">
-                      ₹{sale.total.toFixed(2)}
+                      ₹{Number(sale.total).toFixed(2)}
                     </td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
@@ -152,7 +152,7 @@ const SalesHistory = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {sale.items?.length || 0}
+                      1
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button
@@ -181,11 +181,11 @@ const SalesHistory = () => {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <span className="text-sm text-gray-600">Invoice Number:</span>
-                <div className="font-medium">{selectedSale.invoice_number || `INV-${selectedSale.id}`}</div>
+                <div className="font-medium">{selectedSale.invoice_number || `INV-${selectedSale.sale_id || selectedSale.id}`}</div>
               </div>
               <div>
                 <span className="text-sm text-gray-600">Date:</span>
-                <div className="font-medium">{new Date(selectedSale.date).toLocaleString()}</div>
+                <div className="font-medium">{new Date(selectedSale.timestamp || selectedSale.date).toLocaleString()}</div>
               </div>
               <div>
                 <span className="text-sm text-gray-600">Payment Mode:</span>
@@ -193,7 +193,7 @@ const SalesHistory = () => {
               </div>
               <div>
                 <span className="text-sm text-gray-600">Total Amount:</span>
-                <div className="font-medium text-lg">₹{selectedSale.total.toFixed(2)}</div>
+                <div className="font-medium text-lg">₹{Number(selectedSale.total).toFixed(2)}</div>
               </div>
             </div>
 
@@ -210,24 +210,15 @@ const SalesHistory = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedSale.items?.map((item, index) => {
-                    const itemTotal = item.price * item.quantity;
-                    const discountAmount = (itemTotal * (item.discount || 0)) / 100;
-                    const finalTotal = itemTotal - discountAmount;
-                    
-                    return (
-                      <tr key={index} className="border-b">
-                        <td className="py-2 px-3">
-                          <div className="font-medium">{item.name || item.product_name}</div>
-                          <div className="text-xs text-gray-600">{item.sku}</div>
-                        </td>
-                        <td className="text-right py-2 px-3">{item.quantity}</td>
-                        <td className="text-right py-2 px-3">₹{item.price}</td>
-                        <td className="text-right py-2 px-3">{item.discount || 0}%</td>
-                        <td className="text-right py-2 px-3 font-medium">₹{finalTotal.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
+                  <tr className="border-b">
+                    <td className="py-2 px-3">
+                      <div className="font-medium">{selectedSale.sku}</div>
+                    </td>
+                    <td className="text-right py-2 px-3">{selectedSale.quantity}</td>
+                    <td className="text-right py-2 px-3">₹{Number(selectedSale.unit_price).toFixed(2)}</td>
+                    <td className="text-right py-2 px-3">0%</td>
+                    <td className="text-right py-2 px-3 font-medium">₹{Number(selectedSale.total).toFixed(2)}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -235,15 +226,15 @@ const SalesHistory = () => {
             <div className="space-y-2 border-t pt-4">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span className="font-medium">₹{selectedSale.subtotal?.toFixed(2) || '0.00'}</span>
+                <span className="font-medium">₹{Number(selectedSale.total).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>GST (18%):</span>
-                <span>₹{selectedSale.gst?.toFixed(2) || '0.00'}</span>
+                <span>₹0.00</span>
               </div>
               <div className="flex justify-between text-xl font-bold border-t pt-2">
                 <span>Grand Total:</span>
-                <span>₹{selectedSale.total.toFixed(2)}</span>
+                <span>₹{Number(selectedSale.total).toFixed(2)}</span>
               </div>
             </div>
 

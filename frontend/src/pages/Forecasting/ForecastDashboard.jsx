@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/common/card';
+import { Button } from '@/components/common/button';
 import ForecastChart from '../../components/charts/ForecastChart';
 import api from '../../api/client';
 

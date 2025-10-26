@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Modal } from '@/components/ui/modal';
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
 import api from '../../api/client';
 
 const StockView = () => {
@@ -19,21 +19,26 @@ const StockView = () => {
 
   useEffect(() => {
     fetchInventory();
-  }, []);
+  }, [lowStockOnly]); // Re-fetch when lowStockOnly changes
 
   useEffect(() => {
     applyFilters();
-  }, [inventory, selectedCategory, lowStockOnly, searchTerm]);
+  }, [inventory, selectedCategory, searchTerm]);
 
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/v1/inventory');
+      // Use different endpoint based on lowStockOnly checkbox
+      const endpoint = lowStockOnly ? '/inventory/low-stock' : '/inventory';
+      
+      const response = await api.get(endpoint);
       setInventory(response.data);
       
+      // Extract unique categories
       const uniqueCategories = [...new Set(response.data.map(item => item.category))];
       setCategories(uniqueCategories);
     } catch (error) {
+      console.error('Failed to fetch inventory:', error);
       alert('Failed to fetch inventory: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
@@ -45,10 +50,6 @@ const StockView = () => {
 
     if (selectedCategory) {
       filtered = filtered.filter(item => item.category === selectedCategory);
-    }
-
-    if (lowStockOnly) {
-      filtered = filtered.filter(item => item.current_stock < item.reorder_point);
     }
 
     if (searchTerm) {
@@ -85,7 +86,7 @@ const StockView = () => {
     }
 
     try {
-      await api.post('/api/v1/inventory/adjust', {
+      await api.post('/inventory/adjust', {
         sku: selectedItem.sku,
         quantity_change: parseInt(adjustment.quantity),
         reason: adjustment.reason

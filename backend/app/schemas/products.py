@@ -1,26 +1,27 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
+from uuid import UUID  # ← ADD THIS IMPORT
 
 class ProductBase(BaseModel):
     name: str
     category: str
-    subcategory: Optional[str]
-    brand: Optional[str]
-    size: Optional[str]
+    subcategory: Optional[str] = None
+    brand: Optional[str] = None
+    size: Optional[str] = None
     color: str
-    fabric: Optional[str]
+    fabric: Optional[str] = None
     cost_price: float
     sell_price: float
     reorder_point: int = 5
     lead_time_days: int = 7
-    supplier_id: str
-    season_tag: Optional[str]
-    hsn_code: Optional[str]
+    supplier_id: UUID  # ← Now UUID is imported
+    season_tag: Optional[str] = None
+    hsn_code: Optional[str] = None
     active: bool = True
 
 class ProductCreate(ProductBase):
-    pass
+    sku: str  # Add SKU for creation
 
 class ProductUpdate(ProductBase):
     pass
@@ -30,5 +31,5 @@ class ProductResponse(ProductBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    # Pydantic v2 syntax (replaces orm_mode = True)
+    model_config = ConfigDict(from_attributes=True)

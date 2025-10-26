@@ -61,15 +61,15 @@ async def create_sale(
         
         # Calculate total
         total = sale.unit_price * sale.quantity
-        
-        # Create sale record
+    
         db_sale = Sale(
             timestamp=datetime.utcnow(),
             sku=sale.sku,
             quantity=sale.quantity,
             unit_price=sale.unit_price,
             total=total,
-            payment_mode=sale.payment_mode
+            payment_mode=sale.payment_mode,
+            invoice_number=f"INV-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{sale.sku[:4]}"
         )
         db.add(db_sale)
         db.flush()  # Get sale_id without committing
@@ -80,7 +80,7 @@ async def create_sale(
             sku=sale.sku,
             change_qty=-sale.quantity,
             balance_qty=new_balance,
-            reason=f"Sale #{db_sale.sale_id}"
+            reason=f"Sale {db_sale.invoice_number}"
         )
         db.add(ledger_entry)
         
@@ -173,13 +173,15 @@ async def bulk_create_sales(
                 
                 # Create sale
                 total = sale_data.unit_price * sale_data.quantity
+                # NEW:
                 db_sale = Sale(
                     timestamp=datetime.utcnow(),
                     sku=sale_data.sku,
                     quantity=sale_data.quantity,
                     unit_price=sale_data.unit_price,
                     total=total,
-                    payment_mode=sale_data.payment_mode
+                    payment_mode=sale_data.payment_mode,
+                    invoice_number=f"INV-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{idx}"
                 )
                 db.add(db_sale)
                 db.flush()
@@ -190,7 +192,7 @@ async def bulk_create_sales(
                     sku=sale_data.sku,
                     change_qty=-sale_data.quantity,
                     balance_qty=new_balance,
-                    reason=f"Bulk Sale #{db_sale.sale_id}"
+                    reason=f"Bulk Sale {db_sale.invoice_number}"
                 )
                 db.add(ledger_entry)
                 

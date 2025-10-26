@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
 import api from '../../api/client';
 
 const NewSale = () => {
@@ -32,7 +32,7 @@ const NewSale = () => {
 
   const searchProducts = async () => {
     try {
-      const response = await api.get('/api/v1/inventory', {
+      const response = await api.get('/inventory', {
         params: { search: searchTerm }
       });
       setSearchResults(response.data.slice(0, 10));
@@ -115,7 +115,7 @@ const NewSale = () => {
         total
       };
 
-      const response = await api.post('/api/v1/sales', saleData);
+      const response = await api.post('/sales', saleData);
       setLastSaleData(response.data);
       setSaleSuccess(true);
       setCart([]);

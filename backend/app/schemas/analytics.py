@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List
 from datetime import date
 
@@ -11,8 +11,7 @@ class TopProductResponse(BaseModel):
     transaction_count: int
     avg_transaction_value: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RevenueTrendResponse(BaseModel):
     date: date
@@ -21,8 +20,7 @@ class RevenueTrendResponse(BaseModel):
     transaction_count: int
     avg_order_value: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CategoryBreakdownResponse(BaseModel):
     category: str
@@ -32,8 +30,7 @@ class CategoryBreakdownResponse(BaseModel):
     transaction_count: int
     revenue_percentage: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ABCAnalysisResponse(BaseModel):
     sku: str
@@ -45,5 +42,4 @@ class ABCAnalysisResponse(BaseModel):
     cumulative_revenue_percentage: float
     abc_classification: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

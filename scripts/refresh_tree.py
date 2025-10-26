@@ -22,8 +22,9 @@ import os
 import pathlib
 import time
 import hashlib
-from typing import List, Set
+from typing import List
 
+# Add .git here so the script will always ignore it
 DEFAULT_IGNORE = {
     "__pycache__",
     "*.pyc",
@@ -47,6 +48,9 @@ DEFAULT_IGNORE = {
     "*.egg",
     ".ipynb_checkpoints",
     ".terraform",
+    ".git",         # <--- ensure .git directory is ignored
+    ".git/*",
+    ".git/**",
 }
 
 OUTPUT_FILE = "PROJECT_TREE.txt"
@@ -73,8 +77,13 @@ def path_matches_pattern(path: pathlib.Path, pattern: str, project_root: pathlib
       - trailing slash treats pattern as directory
     It is not a full .gitignore engine but handles the common cases.
     """
+    # Use POSIX style for matching
     p = path.as_posix()
-    rel = path.relative_to(project_root).as_posix() if project_root in path.parents or path == project_root else p
+    try:
+        rel = path.relative_to(project_root).as_posix()
+    except Exception:
+        # if path isn't under project_root (shouldn't happen), fall back to full path
+        rel = p
 
     pat = pattern
     is_dir_pattern = pat.endswith("/")
@@ -87,7 +96,6 @@ def path_matches_pattern(path: pathlib.Path, pattern: str, project_root: pathlib
         return fnmatch.fnmatch(rel, pat) or (is_dir_pattern and fnmatch.fnmatch(rel + "/", pat + "/"))
 
     # Otherwise, match anywhere in path
-    # Try matching basename and whole relative path
     base = path.name
     if fnmatch.fnmatch(base, pat):
         return True
@@ -100,14 +108,23 @@ def path_matches_pattern(path: pathlib.Path, pattern: str, project_root: pathlib
 
 def should_ignore(path: pathlib.Path, gitignore_patterns: List[str], project_root: pathlib.Path) -> bool:
     name = path.name
+
     # always ignore the script output to avoid feedback loops
     if path.name == OUTPUT_FILE:
         return True
+
+    # explicitly ignore .git and any nested .git paths regardless of .gitignore
+    # (safer than depending on the repo .gitignore)
+    if ".git" in path.parts:
+        return True
+
     # builtin ignores
     for pat in DEFAULT_IGNORE:
+        # match both basenames and POSIX path
         if fnmatch.fnmatch(name, pat) or fnmatch.fnmatch(path.as_posix(), pat) or fnmatch.fnmatch(path.as_posix()+"/", pat):
             return True
-    # gitignore patterns
+
+    # gitignore patterns (project .gitignore)
     for pat in gitignore_patterns:
         try:
             if path_matches_pattern(path, pat, project_root):
@@ -121,7 +138,6 @@ def should_ignore(path: pathlib.Path, gitignore_patterns: List[str], project_roo
 def build_tree(project_root: pathlib.Path, gitignore_patterns: List[str]) -> str:
     lines = []
     project_root = project_root.resolve()
-    prefix_stack: List[bool] = []  # whether the parent had more siblings
 
     def walk(dir_path: pathlib.Path, indent: str = ""):
         try:
@@ -138,6 +154,17 @@ def build_tree(project_root: pathlib.Path, gitignore_patterns: List[str]) -> str
             line = indent + connector + entry.name
             lines.append(line)
             if entry.is_dir():
+                # protect against symlink loops and huge directories
+                try:
+                    # Optionally skip traversal of very large dirs (e.g., > 2000 entries) to avoid freezes
+                    child_entries = list(entry.iterdir())
+                    if len(child_entries) > 5000:
+                        lines.append(indent + ("    " if is_last else "│   ") + "└── [skipped large directory]")
+                        continue
+                except Exception:
+                    # if any error, avoid recursing into that dir
+                    continue
+
                 new_indent = indent + ("    " if is_last else "│   ")
                 walk(entry, new_indent)
 

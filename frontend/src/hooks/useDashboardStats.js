@@ -1,6 +1,6 @@
 // hooks/useDashboardStats.js
 import { useState, useCallback } from 'react';
-import axios from '../api/client';
+import api from '../api/client';
 
 export function useDashboardStats() {
   const [stats, setStats] = useState({
@@ -22,10 +22,10 @@ export function useDashboardStats() {
 
       // Fetch all required data in parallel
       const [productsRes, topProductsRes, revenueRes, lowStockRes] = await Promise.all([
-        axios.get('/api/v1/products'),
-        axios.get('/api/v1/analytics/top-products?days=30'),
-        axios.get('/api/v1/analytics/revenue-trend?days=90'),
-        axios.get('/api/v1/inventory/low-stock')
+        api.get('/products'),
+        api.get('/analytics/top-products?days=30'),
+        api.get('/analytics/revenue-trend?days=90'),
+        api.get('/inventory/low-stock')
       ]);
 
       // Process revenue trend data (last 30 days)

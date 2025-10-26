@@ -1,13 +1,17 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
+
+// Real component imports
+import ProductList from './pages/Products/ProductList';
+import SalesHistory from './pages/Sales/SalesHistory';
+import NewSale from './pages/Sales/NewSale';
+import StockView from './pages/Inventory/StockView';
+
+// Placeholder imports
 import {
-  ProductList,
   ProductForm,
   ProductDetail,
-  SalesHistory,
-  NewSale,
-  StockView,
   ForecastDashboard,
   Reports,
 } from './pages/PlaceholderPages';

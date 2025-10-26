@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card } from '../../components/Card';
-import { Button } from '../../components/Button';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
-import axios from '../../api/client';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import api from '../../api/client';
 
 // Mock useNavigate for demo purposes - replace with actual react-router-dom in your app
 const useNavigate = () => (path) => console.log('Navigate to:', path);
@@ -35,12 +35,14 @@ export default function ProductList() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('/api/v1/products');
+      console.log('🔄 Fetching products...');
+      const response = await api.get('/products');
+      console.log('✅ Products fetched:', response.data);
       setProducts(response.data);
       setFilteredProducts(response.data);
     } catch (err) {
-      setError(err.message || 'Failed to fetch products');
-      console.error('Products fetch error:', err);
+      console.error('❌ Products fetch error:', err);
+      setError(err.response?.data?.detail || err.message || 'Failed to fetch products');
     } finally {
       setLoading(false);
     }
@@ -70,13 +72,15 @@ export default function ProductList() {
     if (!productToDelete) return;
 
     try {
-      await axios.delete(`/api/v1/products/${productToDelete.sku}`);
+      console.log('🗑️ Deleting product:', productToDelete.sku);
+      await api.delete(`/products/${productToDelete.sku}`);
       setProducts(products.filter((p) => p.sku !== productToDelete.sku));
       setShowDeleteModal(false);
       setProductToDelete(null);
       alert('Product deleted successfully');
     } catch (err) {
-      alert('Failed to delete product: ' + err.message);
+      console.error('❌ Delete error:', err);
+      alert('Failed to delete product: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -164,12 +168,12 @@ export default function ProductList() {
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.sku}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{product.name}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{product.category}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{product.size}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{product.color}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(product.sellPrice)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{product.size || 'N/A'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{product.color || 'N/A'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(product.sell_price)}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">
-                    <span className={product.stock < product.reorderPoint ? 'text-red-600 font-semibold' : ''}>
-                      {product.stock}
+                    <span className={product.stock_quantity < product.reorder_point ? 'text-red-600 font-semibold' : ''}>
+                      {product.stock_quantity}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm">

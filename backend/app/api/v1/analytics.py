@@ -19,7 +19,7 @@ from app.models import Sale, Product
 router = APIRouter()
 
 
-@router.get("/analytics/top-products", response_model=List[TopProductResponse])
+@router.get("/top-products", response_model=List[TopProductResponse])
 async def get_top_products(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     limit: int = Query(10, ge=1, le=50, description="Number of top products to return"),
@@ -89,7 +89,7 @@ async def get_top_products(
     return top_products
 
 
-@router.get("/analytics/revenue-trend", response_model=List[RevenueTrendResponse])
+@router.get("/revenue-trend", response_model=List[RevenueTrendResponse])
 async def get_revenue_trend(
     days: int = Query(90, ge=7, le=365, description="Number of days to analyze"),
     db: Session = Depends(get_db)
@@ -139,7 +139,7 @@ async def get_revenue_trend(
     return trend
 
 
-@router.get("/analytics/category-breakdown", response_model=List[CategoryBreakdownResponse])
+@router.get("/category-breakdown", response_model=List[CategoryBreakdownResponse])
 async def get_category_breakdown(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     db: Session = Depends(get_db)
@@ -196,7 +196,7 @@ async def get_category_breakdown(
     return breakdown
 
 
-@router.get("/analytics/abc-analysis", response_model=List[ABCAnalysisResponse])
+@router.get("/abc-analysis", response_model=List[ABCAnalysisResponse])
 async def get_abc_analysis(
     days: int = Query(90, ge=30, le=365, description="Number of days to analyze"),
     db: Session = Depends(get_db)
@@ -277,7 +277,7 @@ async def get_abc_analysis(
     return results
 
 
-@router.get("/analytics/summary")
+@router.get("/summary")
 async def get_analytics_summary(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     db: Session = Depends(get_db)

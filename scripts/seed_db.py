@@ -21,6 +21,23 @@ fake = Faker('en_IN')  # Indian locale
 Faker.seed(42)
 random.seed(42)
 
+def clear_db(db):
+    """Delete all data in the right order to avoid FK constraint errors"""
+    # Delete child tables first (tables that reference others)
+    db.query(Return).delete()           # Returns reference Sales
+    db.query(InventoryLedger).delete()
+    db.query(Promotion).delete()
+    db.query(CalendarEvent).delete()
+    db.query(Sale).delete()             # Now safe
+    db.query(PurchaseOrder).delete()
+    db.query(Product).delete()
+    db.query(Supplier).delete()
+    
+    db.commit()
+    print("✓ Cleared existing data from all tables")
+
+
+
 def create_suppliers(db):
     """Create 6 suppliers"""
     supplier_names = [
@@ -386,15 +403,15 @@ def main():
     print("=" * 60)
     print("Starting database seeding...")
     print("=" * 60)
-    
+
     # Initialize database
     init_db()
-    
+
     # Create session
-    db = SessionLocal()
-    
+    db = SessionLocal()  # <-- Make sure this line comes BEFORE using db
+
     try:
-        # Seed data in order
+        clear_db(db)  # <-- Now db exists, safe to call
         suppliers = create_suppliers(db)
         products = create_products(db, suppliers)
         events = create_calendar_events(db)
@@ -402,17 +419,18 @@ def main():
         create_sales(db, products)
         create_returns(db)
         create_promotions(db)
-        
+
         print("=" * 60)
         print("✓ Database seeding completed successfully!")
         print("=" * 60)
-        
+
     except Exception as e:
         print(f"✗ Error during seeding: {e}")
         db.rollback()
         raise
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     main()

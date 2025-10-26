@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
 import api from '../../api/client';
 
 const LowStockAlerts = () => {
