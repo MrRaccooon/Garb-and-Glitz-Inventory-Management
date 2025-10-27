@@ -42,6 +42,7 @@ const SalesHistory = () => {
   };
 
   const viewDetails = (sale) => {
+    console.log('Selected sale:', sale);
     setSelectedSale(sale);
     setShowModal(true);
   };
@@ -134,8 +135,7 @@ const SalesHistory = () => {
                 {sales.map((sale) => (
                   <tr
                     key={sale.sale_id || sale.id}
-                    className="border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => viewDetails(sale)}
+                    className="border-b hover:bg-gray-50"
                   >
                     <td className="py-3 px-4 font-medium">
                       {sale.invoice_number || `INV-${sale.sale_id || sale.id}`}
@@ -173,11 +173,14 @@ const SalesHistory = () => {
         )}
       </Card>
 
-      {showModal && selectedSale && (
-        <Modal onClose={() => setShowModal(false)}>
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Sale Details</h2>
-            
+      <Modal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)}
+        title="Sale Details"
+        size="lg"
+      >
+        {selectedSale && (
+          <div>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <span className="text-sm text-gray-600">Invoice Number:</span>
@@ -244,8 +247,8 @@ const SalesHistory = () => {
               </Button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

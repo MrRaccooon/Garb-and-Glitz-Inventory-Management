@@ -18,25 +18,34 @@ const StockView = () => {
   const [adjustment, setAdjustment] = useState({ quantity: '', reason: 'Correction' });
 
   useEffect(() => {
+    fetchCategories(); // Fetch categories from Products
     fetchInventory();
-  }, [lowStockOnly]); // Re-fetch when lowStockOnly changes
+  }, [lowStockOnly]);
 
   useEffect(() => {
     applyFilters();
   }, [inventory, selectedCategory, searchTerm]);
 
+  // Fetch categories from Products API (single source of truth)
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/products');
+      const uniqueCategories = [...new Set(response.data.map(p => p.category))].sort();
+      setCategories(uniqueCategories);
+      console.log('📦 Categories loaded from Products:', uniqueCategories);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      // Use different endpoint based on lowStockOnly checkbox
       const endpoint = lowStockOnly ? '/inventory/low-stock' : '/inventory';
       
       const response = await api.get(endpoint);
       setInventory(response.data);
-      
-      // Extract unique categories
-      const uniqueCategories = [...new Set(response.data.map(item => item.category))];
-      setCategories(uniqueCategories);
+      console.log('📦 Inventory items:', response.data);
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
       alert('Failed to fetch inventory: ' + (error.response?.data?.message || error.message));
@@ -64,9 +73,9 @@ const StockView = () => {
   };
 
   const getStatusBadge = (item) => {
-    if (item.current_stock === 0) {
+    if (item.balance_qty === 0) {
       return <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-medium">Out</span>;
-    } else if (item.current_stock < item.reorder_point) {
+    } else if (item.balance_qty < item.reorder_point) {
       return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-medium">Low</span>;
     } else {
       return <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-medium">OK</span>;
@@ -88,7 +97,7 @@ const StockView = () => {
     try {
       await api.post('/inventory/adjust', {
         sku: selectedItem.sku,
-        quantity_change: parseInt(adjustment.quantity),
+        change_qty: parseInt(adjustment.quantity),
         reason: adjustment.reason
       });
 
@@ -158,7 +167,12 @@ const StockView = () => {
         {loading ? (
           <div className="text-center py-8 text-gray-500">Loading inventory...</div>
         ) : filteredInventory.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No items found</div>
+          <div className="text-center py-8 text-gray-500">
+            {selectedCategory 
+              ? `No inventory items found for category "${selectedCategory}". This category may not have any stock yet.`
+              : 'No items found'
+            }
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -180,7 +194,7 @@ const StockView = () => {
                     <td className="py-3 px-4">{item.name}</td>
                     <td className="py-3 px-4">{item.category}</td>
                     <td className="py-3 px-4 text-right font-medium">
-                      {item.current_stock}
+                      {item.balance_qty}
                     </td>
                     <td className="py-3 px-4 text-right">{item.reorder_point}</td>
                     <td className="py-3 px-4 text-center">
@@ -202,17 +216,20 @@ const StockView = () => {
         )}
       </Card>
 
-      {showAdjustModal && selectedItem && (
-        <Modal onClose={() => setShowAdjustModal(false)}>
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Adjust Stock</h2>
-            
+      <Modal 
+        isOpen={showAdjustModal} 
+        onClose={() => setShowAdjustModal(false)}
+        title="Adjust Stock"
+        size="md"
+      >
+        {selectedItem && (
+          <div>
             <div className="mb-6">
               <div className="text-sm text-gray-600">Product</div>
               <div className="font-medium text-lg">{selectedItem.name}</div>
               <div className="text-sm text-gray-600">SKU: {selectedItem.sku}</div>
               <div className="text-sm text-gray-600 mt-2">
-                Current Stock: <span className="font-medium">{selectedItem.current_stock}</span>
+                Current Stock: <span className="font-medium">{selectedItem.balance_qty}</span>
               </div>
             </div>
 
@@ -247,7 +264,7 @@ const StockView = () => {
                   <div className="text-sm">
                     New stock will be:{' '}
                     <span className="font-bold">
-                      {selectedItem.current_stock + parseInt(adjustment.quantity || 0)}
+                      {selectedItem.balance_qty + parseInt(adjustment.quantity || 0)}
                     </span>
                   </div>
                 </div>
@@ -263,8 +280,8 @@ const StockView = () => {
               </Button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

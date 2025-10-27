@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Modal from '../../components/common/Modal'; // ADD THIS
+import ProductForm from './ProductForm'; // ADD THIS
 import api from '../../api/client';
 
 // Mock useNavigate for demo purposes - replace with actual react-router-dom in your app
@@ -19,9 +21,15 @@ export default function ProductList() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const itemsPerPage = 10;
+  const [inventory, setInventory] = useState({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetchProducts();
+    fetchInventory();
   }, []);
 
   useEffect(() => {
@@ -31,15 +39,37 @@ export default function ProductList() {
     return () => clearTimeout(timer);
   }, [searchTerm, categoryFilter, products]);
 
+  const fetchInventory = async () => {
+    try {
+      const response = await api.get('/inventory');
+      const inventoryMap = {};
+      response.data.forEach(item => {
+        inventoryMap[item.sku] = item.balance_qty;
+      });
+      setInventory(inventoryMap);
+    } catch (error) {
+      console.error('Failed to fetch inventory:', error);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError(null);
       console.log('🔄 Fetching products...');
+      
+      // Fetch ALL products (no active filter)
       const response = await api.get('/products');
       console.log('✅ Products fetched:', response.data);
+      
       setProducts(response.data);
       setFilteredProducts(response.data);
+      
+      // Extract ALL unique categories from products (single source of truth)
+      const uniqueCategories = [...new Set(response.data.map(p => p.category))].sort();
+      setCategories(uniqueCategories);
+      console.log('📦 All available categories:', uniqueCategories);
+      
     } catch (err) {
       console.error('❌ Products fetch error:', err);
       setError(err.response?.data?.detail || err.message || 'Failed to fetch products');
@@ -113,7 +143,7 @@ export default function ProductList() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-        <Button onClick={() => navigate('/products/new')}>Add Product</Button>
+        <Button onClick={() => setShowAddModal(true)}>Add Product</Button>
       </div>
 
       {error && (
@@ -137,10 +167,9 @@ export default function ProductList() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="All">All Categories</option>
-            <option value="Saree">Saree</option>
-            <option value="Suit">Suit</option>
-            <option value="Lehenga">Lehenga</option>
-            <option value="Dupatta">Dupatta</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
         </div>
 
@@ -155,6 +184,7 @@ export default function ProductList() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -171,15 +201,31 @@ export default function ProductList() {
                   <td className="px-4 py-3 text-sm text-gray-700">{product.size || 'N/A'}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{product.color || 'N/A'}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(product.sell_price)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    <span className={product.stock_quantity < product.reorder_point ? 'text-red-600 font-semibold' : ''}>
-                      {product.stock_quantity}
+                  <td className="py-3 px-4 text-sm text-gray-700">
+                    <span className={`font-medium ${
+                      (inventory[product.sku] || 0) === 0 ? 'text-red-600' : 
+                      (inventory[product.sku] || 0) < (product.reorder_point || 5) ? 'text-yellow-600' : 
+                      'text-green-600'
+                    }`}>
+                      {inventory[product.sku] || 0}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      product.active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {product.active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={() => navigate(`/products/${product.sku}/edit`)}
+                        onClick={() => {
+                          setEditingProduct(product);
+                          setShowEditModal(true);
+                        }}
                         className="text-blue-600 hover:text-blue-800"
                       >
                         Edit
@@ -199,7 +245,12 @@ export default function ProductList() {
         </div>
 
         {filteredProducts.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No products found</div>
+          <div className="text-center py-8 text-gray-500">
+            {categoryFilter !== 'All' 
+              ? `No products found in category "${categoryFilter}"`
+              : 'No products found'
+            }
+          </div>
         )}
 
         {totalPages > 1 && (
@@ -239,6 +290,49 @@ export default function ProductList() {
           </Card>
         </div>
       )}
+      {/* Add Product Modal */}
+      <Modal 
+        isOpen={showAddModal} 
+        onClose={() => setShowAddModal(false)}
+        title="Add New Product"
+        size="xl"
+      >
+        <ProductForm 
+          mode="create"
+          onSuccess={() => {
+            setShowAddModal(false);
+            fetchProducts();
+            fetchInventory();
+          }}
+          onCancel={() => setShowAddModal(false)}
+        />
+      </Modal>
+
+      {/* Edit Product Modal */}
+      <Modal 
+        isOpen={showEditModal} 
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingProduct(null);
+        }}
+        title="Edit Product"
+        size="xl"
+      >
+        <ProductForm 
+          mode="edit"
+          productData={editingProduct}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setEditingProduct(null);
+            fetchProducts();
+            fetchInventory();
+          }}
+          onCancel={() => {
+            setShowEditModal(false);
+            setEditingProduct(null);
+          }}
+        />
+      </Modal>
     </div>
   );
 }
