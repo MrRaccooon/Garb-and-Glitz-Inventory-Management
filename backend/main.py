@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.dependencies import get_db
-from app.api.v1 import products, sales, inventory, forecasting, analytics
+from app.api.v1 import products, sales, inventory, forecasting, analytics, auth, suppliers
 
 # Configure logging
 logging.basicConfig(
@@ -62,11 +62,13 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(products.router, prefix="/api/v1", tags=["Products"])
 app.include_router(sales.router, prefix="/api/v1", tags=["Sales"])
 app.include_router(inventory.router, prefix="/api/v1", tags=["Inventory"])
 app.include_router(forecasting.router, prefix="/api/v1", tags=["Forecasting"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["Analytics"])
+app.include_router(suppliers.router, prefix="/api/v1/suppliers", tags=["Suppliers"])
 
 
 @app.get("/health", tags=["Health"])

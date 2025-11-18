@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     
     # Database configuration
     DATABASE_URL: str = Field(
-        default="postgresql://user:password@localhost:5432/inventory_db",
+        default="postgresql://inventory:password@localhost:5432/inventory_db",
         description="PostgreSQL database connection string"
     )
     
@@ -31,9 +31,17 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = Field(
-        default="your-secret-key-change-in-production",
+        default="garb-and-glitz-dev-secret-key-change-in-production-please",
         min_length=32,
         description="Secret key for JWT and encryption"
+    )
+    ALGORITHM: str = Field(
+        default="HS256",
+        description="JWT algorithm"
+    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=30,
+        description="JWT token expiration time in minutes"
     )
     
     # Environment

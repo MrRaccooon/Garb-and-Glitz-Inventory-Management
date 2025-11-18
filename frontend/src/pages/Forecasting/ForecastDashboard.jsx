@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/common/card';
-import { Button } from '@/components/common/button';
-import ForecastChart from '../../components/charts/ForecastChart';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import ForecastChart from './ForecastChart';
 import api from '../../api/client';
 
 const ForecastDashboard = () => {
@@ -19,17 +19,17 @@ const ForecastDashboard = () => {
   const fetchSkus = async () => {
     setFetchingSkus(true);
     try {
-      const response = await api.get('/api/v1/inventory');
+      const response = await api.get('/products');
       const activeSkus = response.data
         .filter(item => item.active !== false)
         .map(item => ({ sku: item.sku, name: item.name }));
       setSkus(activeSkus);
-      
+
       if (activeSkus.length > 0) {
         setSelectedSku(activeSkus[0].sku);
       }
     } catch (error) {
-      alert('Failed to fetch SKUs: ' + (error.response?.data?.message || error.message));
+      alert('Failed to fetch SKUs: ' + (error.response?.data?.detail || error.message));
     } finally {
       setFetchingSkus(false);
     }
@@ -43,7 +43,7 @@ const ForecastDashboard = () => {
 
     setLoading(true);
     try {
-      const response = await api.get('/api/v1/forecast', {
+      const response = await api.get('/forecast', {
         params: {
           sku: selectedSku,
           horizon: horizon
@@ -51,7 +51,7 @@ const ForecastDashboard = () => {
       });
       setForecastData(response.data);
     } catch (error) {
-      alert('Failed to fetch forecast: ' + (error.response?.data?.message || error.message));
+      alert('Failed to fetch forecast: ' + (error.response?.data?.detail || error.message));
       setForecastData(null);
     } finally {
       setLoading(false);
@@ -61,7 +61,7 @@ const ForecastDashboard = () => {
   const calculateMetrics = () => {
     if (!forecastData || !forecastData.forecast) return null;
 
-    const forecastValues = forecastData.forecast.map(d => d.forecast).filter(v => v != null);
+    const forecastValues = forecastData.forecast.map(d => d.value).filter(v => v != null);
     const avgDailyDemand = forecastValues.reduce((a, b) => a + b, 0) / forecastValues.length;
     const peakDemand = Math.max(...forecastValues);
     const recommendedReorder = Math.ceil(avgDailyDemand * 7 * 1.5);

@@ -15,7 +15,7 @@ const LowStockAlerts = () => {
   const fetchLowStockItems = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/v1/inventory/low-stock');
+      const response = await api.get('/inventory/low-stock');
       setLowStockItems(response.data);
     } catch (error) {
       alert('Failed to fetch low stock items: ' + (error.response?.data?.message || error.message));

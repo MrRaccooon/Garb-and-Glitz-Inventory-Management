@@ -1,15 +1,19 @@
 """
-Product management API endpoints.
+Product management API endpoints - FIXED VERSION
+File: backend/app/api/v1/products.py
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from typing import Optional, List
+import logging
 
 from app.dependencies import get_db, validate_pagination
-from app.schemas import ProductCreate, ProductUpdate, ProductResponse
-from app.models import Product
+from app.schemas.products import ProductCreate, ProductUpdate, ProductResponse
+from app.models.products import Product
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/products", response_model=List[ProductResponse])
@@ -23,17 +27,6 @@ async def list_products(
 ) -> List[ProductResponse]:
     """
     Retrieve a list of products with optional filtering and pagination.
-    
-    Args:
-        category: Filter products by category
-        search: Search term for product name or SKU
-        active: Filter by active/inactive status
-        skip: Number of records to skip for pagination
-        limit: Maximum number of records to return
-        db: Database session dependency
-        
-    Returns:
-        List[ProductResponse]: List of products matching the criteria
     """
     skip, limit = validate_pagination(skip, limit)
     
@@ -66,39 +59,65 @@ async def create_product(
 ) -> ProductResponse:
     """
     Create a new product in the inventory.
-    
-    Args:
-        product: Product data to create
-        db: Database session dependency
-        
-    Returns:
-        ProductResponse: Created product with all fields
-        
-    Raises:
-        HTTPException: 400 if SKU already exists
     """
-    # Check if SKU already exists
-    existing = db.query(Product).filter(Product.sku == product.sku).first()
-    if existing:
+    try:
+        # Check if SKU already exists
+        existing = db.query(Product).filter(Product.sku == product.sku).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Product with SKU '{product.sku}' already exists"
+            )
+        
+        # Validate business logic
+        if product.sell_price < product.cost_price:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sell price cannot be less than cost price"
+            )
+        
+        # ✅ FIXED: Validate supplier_id if provided
+        if product.supplier_id:
+            from app.models.suppliers import Supplier
+            supplier = db.query(Supplier).filter(Supplier.supplier_id == product.supplier_id).first()
+            if not supplier:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Supplier with ID '{product.supplier_id}' not found"
+                )
+        
+        # Create new product
+        db_product = Product(**product.model_dump())
+        db.add(db_product)
+        db.commit()
+        db.refresh(db_product)
+        
+        logger.info(f"Product created successfully: {db_product.sku}")
+        return db_product
+        
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Product with SKU '{product.sku}' already exists"
+            detail=f"Database constraint violation. Please check all required fields."
         )
-    
-    # Validate business logic
-    if product.sell_price < product.cost_price:
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sell price cannot be less than cost price"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred"
         )
-    
-    # Create new product
-    db_product = Product(**product.model_dump())
-    db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
-    
-    return db_product
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
 
 
 @router.get("/products/{sku}", response_model=ProductResponse)
@@ -108,16 +127,6 @@ async def get_product(
 ) -> ProductResponse:
     """
     Retrieve a single product by SKU.
-    
-    Args:
-        sku: Product SKU identifier
-        db: Database session dependency
-        
-    Returns:
-        ProductResponse: Product details
-        
-    Raises:
-        HTTPException: 404 if product not found
     """
     product = db.query(Product).filter(Product.sku == sku).first()
     
@@ -138,46 +147,71 @@ async def update_product(
 ) -> ProductResponse:
     """
     Update an existing product.
-    
-    Args:
-        sku: Product SKU identifier
-        product_update: Fields to update
-        db: Database session dependency
-        
-    Returns:
-        ProductResponse: Updated product
-        
-    Raises:
-        HTTPException: 404 if product not found, 400 for validation errors
     """
-    db_product = db.query(Product).filter(Product.sku == sku).first()
-    
-    if not db_product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Product with SKU '{sku}' not found"
-        )
-    
-    # Update only provided fields
-    update_data = product_update.model_dump(exclude_unset=True)
-    
-    # Validate business logic if prices are being updated
-    cost_price = update_data.get("cost_price", db_product.cost_price)
-    sell_price = update_data.get("sell_price", db_product.sell_price)
-    
-    if sell_price < cost_price:
+    try:
+        db_product = db.query(Product).filter(Product.sku == sku).first()
+        
+        if not db_product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with SKU '{sku}' not found"
+            )
+        
+        # Update only provided fields
+        update_data = product_update.model_dump(exclude_unset=True)
+        
+        # Validate business logic if prices are being updated
+        cost_price = update_data.get("cost_price", db_product.cost_price)
+        sell_price = update_data.get("sell_price", db_product.sell_price)
+        
+        if sell_price < cost_price:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sell price cannot be less than cost price"
+            )
+        
+        # ✅ FIXED: Validate supplier_id if being updated
+        if "supplier_id" in update_data and update_data["supplier_id"]:
+            from app.models.suppliers import Supplier
+            supplier = db.query(Supplier).filter(Supplier.supplier_id == update_data["supplier_id"]).first()
+            if not supplier:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Supplier with ID '{update_data['supplier_id']}' not found"
+                )
+        
+        for field, value in update_data.items():
+            setattr(db_product, field, value)
+        
+        db.commit()
+        db.refresh(db_product)
+        
+        logger.info(f"Product updated successfully: {sku}")
+        return db_product
+        
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sell price cannot be less than cost price"
+            detail="Database constraint violation. Please check all required fields."
         )
-    
-    for field, value in update_data.items():
-        setattr(db_product, field, value)
-    
-    db.commit()
-    db.refresh(db_product)
-    
-    return db_product
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
 
 
 @router.delete("/products/{sku}", status_code=status.HTTP_204_NO_CONTENT)
@@ -187,13 +221,6 @@ async def delete_product(
 ) -> None:
     """
     Soft delete a product by setting active=False.
-    
-    Args:
-        sku: Product SKU identifier
-        db: Database session dependency
-        
-    Raises:
-        HTTPException: 404 if product not found
     """
     db_product = db.query(Product).filter(Product.sku == sku).first()
     
@@ -205,3 +232,4 @@ async def delete_product(
     
     db_product.active = False
     db.commit()
+    logger.info(f"Product soft deleted: {sku}")

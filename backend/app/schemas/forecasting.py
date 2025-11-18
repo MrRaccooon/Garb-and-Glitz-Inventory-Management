@@ -23,10 +23,12 @@ class ForecastRequest(BaseModel):
 
 class ForecastDataPoint(BaseModel):
     """
-    Represents a single data point in a forecast response
+    Represents a single data point in a forecast response with confidence intervals
     """
     date: date
-    predicted_quantity: int
+    value: float  # Primary forecast value
+    lower_bound: float  # Lower confidence interval
+    upper_bound: float  # Upper confidence interval
 
     class Config:
         from_attributes = True
@@ -34,7 +36,11 @@ class ForecastDataPoint(BaseModel):
 
 class ForecastResponse(BaseModel):
     sku: str
+    product_name: str
+    forecast_horizon_days: int
     forecast: List[ForecastDataPoint]
+    historical_avg_daily_sales: float
+    confidence_level: float
 
     class Config:
         from_attributes = True

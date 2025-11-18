@@ -1,7 +1,13 @@
-from sqlalchemy import Column, String, Numeric, Integer, Boolean, DateTime, ForeignKey, Index, CheckConstraint, UUID
+"""
+Product SQLAlchemy Model - FIXED VERSION
+File: backend/app/models/products.py
+"""
+from sqlalchemy import Column, String, Numeric, Integer, Boolean, DateTime, ForeignKey, Index, CheckConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from app.models.base import Base
+import uuid
 
 
 class Product(Base):
@@ -16,7 +22,7 @@ class Product(Base):
     subcategory = Column(String(50), nullable=True)  # Banarasi, Kanjivaram, Anarkali, etc.
     brand = Column(String(100), nullable=True)
     size = Column(String(20), nullable=True)  # Free Size, S, M, L, XL, XXL
-    color = Column(String(50), nullable=False)
+    color = Column(String(50), nullable=True)  # ✅ FIXED: Made optional
     fabric = Column(String(50), nullable=True)  # Silk, Cotton, Georgette, etc.
     
     # Pricing
@@ -24,11 +30,11 @@ class Product(Base):
     sell_price = Column(Numeric(10, 2), nullable=False)
     
     # Inventory Management
-    reorder_point = Column(Integer, default=5, nullable=False)
+    reorder_point = Column(Integer, default=10, nullable=False)  # ✅ FIXED: Changed default to 10
     lead_time_days = Column(Integer, default=7, nullable=False)
     
-    # Supplier Relationship
-    supplier_id = Column(UUID(as_uuid=True), ForeignKey('suppliers.supplier_id'), nullable=False)
+    # Supplier Relationship - ✅ FIXED: Made optional
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey('suppliers.supplier_id'), nullable=True)
     
     # Additional Attributes
     season_tag = Column(String(50), nullable=True)  # Summer, Winter, Festive, Wedding

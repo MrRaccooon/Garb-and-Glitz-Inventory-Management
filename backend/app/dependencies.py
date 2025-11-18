@@ -28,7 +28,8 @@ engine = create_engine(
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine,
+    expire_on_commit=False
 )
 
 
@@ -103,14 +104,14 @@ def handle_db_errors(func: Callable) -> Callable:
 def validate_pagination(skip: int = 0, limit: int = 50) -> tuple[int, int]:
     """
     Validate and normalize pagination parameters.
-    
+
     Args:
         skip: Number of records to skip
         limit: Maximum number of records to return
-        
+
     Returns:
         tuple[int, int]: Validated (skip, limit) values
-        
+
     Raises:
         HTTPException: If parameters are invalid
     """
@@ -119,17 +120,44 @@ def validate_pagination(skip: int = 0, limit: int = 50) -> tuple[int, int]:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Skip parameter must be non-negative"
         )
-    
+
     if limit < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Limit parameter must be positive"
         )
-    
+
     if limit > settings.MAX_PAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Limit cannot exceed {settings.MAX_PAGE_SIZE}"
         )
-    
+
     return skip, limit
+
+
+def init_db():
+    """
+    Initialize the database by creating all tables.
+    """
+    try:
+        from app.models.base import Base
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except SQLAlchemyError as e:
+        logger.error(f"Error initializing database: {e}")
+        raise
+
+
+def drop_db():
+    """
+    Drop all database tables.
+    WARNING: This will delete all data!
+    """
+    try:
+        from app.models.base import Base
+        Base.metadata.drop_all(bind=engine)
+        logger.info("Database tables dropped successfully")
+    except SQLAlchemyError as e:
+        logger.error(f"Error dropping database: {e}")
+        raise

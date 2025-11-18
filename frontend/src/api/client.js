@@ -11,8 +11,8 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    console.log('🚀 API Request:', config.method.toUpperCase(), config.baseURL + config.url); // ADD THIS LINE
-    const token = localStorage.getItem('token');
+    console.log('🚀 API Request:', config.method.toUpperCase(), config.baseURL + config.url);
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,16 +26,16 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.config.url, response.status); // ADD THIS LINE
+    console.log('✅ API Response:', response.config.url, response.status);
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.message); // ADD THIS LINE
+    console.error('❌ API Error:', error.response?.status, error.message);
     if (error.response) {
       const { status } = error.response;
-      
+
       if (status === 401) {
-        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
         window.location.href = '/login';
         console.error('Unauthorized - redirecting to login');
       } else if (status === 500) {
@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -91,7 +91,7 @@ export const analyticsAPI = {
 
 // Forecasting API
 export const forecastingAPI = {
-  getForecast: (params) => api.get('/forecasting/forecast', { params }),
+  getForecast: (params) => api.get('/forecast', { params }),
 };
 
 export default api;

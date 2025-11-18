@@ -3,6 +3,7 @@ from .inventory import *
 from .forecasting import *
 from .analytics import *
 from .products import *
+from .suppliers import *
 
 # from .products import ProductCreate, ProductUpdate, ProductResponse
 # from .sales import SaleCreate, SaleUpdate, SaleResponse

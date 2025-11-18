@@ -1,4 +1,5 @@
 from .base import Base
+from .users import User
 from .products import Product
 from .suppliers import Supplier
 from .sales import Sale
