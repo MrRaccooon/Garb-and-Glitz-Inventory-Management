@@ -119,3 +119,5 @@ dump.rdb
 # Build outputs
 *.out
 *.build
+
+.claude
